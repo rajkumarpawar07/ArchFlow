@@ -8,7 +8,7 @@ import { CriticView, PrdView, TerraformView, download, mermaidFromState } from "
 import { SAMPLE_ORDER_RAMBLE } from "@/lib/samples";
 import type { ArchState } from "@/lib/schema";
 
-type Engine = "mock" | "gemini" | "mock-fallback" | null;
+type Engine = "mock" | "openrouter" | "mock-fallback" | null;
 
 export default function BuildPage() {
   const [utterance, setUtterance] = useState(SAMPLE_ORDER_RAMBLE);

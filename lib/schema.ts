@@ -65,10 +65,10 @@ export const emptyState: ArchState = {
   cleaned_transcript: "",
 };
 
-// Relaxed schema sent to Gemini. The Gemini responseJsonSchema endpoint enforces a
-// complexity budget — sending ArchStateSchema (many .max() bounds) yields a bare
-// HTTP 400 INVALID_ARGUMENT. We validate/clamp locally against ArchStateSchema.
-export const GeminiArchStateSchema = z.object({
+// Relaxed schema sent to the provider. Some models (e.g. Gemini's responseJsonSchema
+// endpoint) enforce a complexity budget — sending ArchStateSchema (many .max() bounds)
+// yields a bare HTTP 400 INVALID_ARGUMENT. We validate/clamp locally against ArchStateSchema.
+export const ArchStateOutputSchema = z.object({
   nodes: z.array(
     z.object({
       id: z.string(),
@@ -105,7 +105,7 @@ function clampStr(s: string, max: number): string {
 }
 
 /** Clamp a model-produced state into ArchState limits and drop dangling edges. */
-export function clampToArchState(raw: z.infer<typeof GeminiArchStateSchema>): ArchState {
+export function clampToArchState(raw: z.infer<typeof ArchStateOutputSchema>): ArchState {
   const nodes = raw.nodes
     .filter((n) => n.id && n.label)
     .slice(0, 16);

@@ -281,6 +281,82 @@ const REMOVE_TARGETS: Array<{ re: RegExp; match: (n: ArchState["nodes"][number])
   { re: /\b(worker|cloud run|run)\b/i, match: (n) => /worker|cloud.?run/i.test(n.id + " " + n.label) },
 ];
 
+/** "Swap X out for Y" / "Replace X with Y" — remove X, wire Y into X's neighborhood. */
+function swapIntent(u: string, utterance: string, current: ArchState): ArchState | null {
+  if (!/\b(swap|replace|instead of)\b/i.test(u)) return null;
+  const m =
+    utterance.match(/\b(?:swap)\s+(?:out\s+)?([^,.;]+?)\s+(?:out\s+)?for\s+([^,.;]+)/i) ??
+    utterance.match(/\breplace\s+([^,.;]+?)\s+with\s+([^,.;]+)/i);
+  if (!m) return null;
+  const fromTxt = m[1].toLowerCase().trim();
+  // "to" clause can carry trailing requests ("...and put a cache...") — keep the first phrase
+  const toTxt = m[2]
+    .toLowerCase()
+    .split(/\s+(?:and|plus)\s+|,\s*/i)[0]
+    .trim();
+
+  const nodeFor = (txt: string, words: (n: ArchState["nodes"][number]) => string) => {
+    const tokens = txt.split(/\s+/).filter((w) => w.length >= 3);
+    let best: ArchState["nodes"][number] | undefined;
+    let bestScore = -1;
+    for (const n of current.nodes) {
+      const hay = words(n).toLowerCase();
+      let score: number;
+      if (hay.includes(txt)) score = 2000; // exact phrase beat — always wins
+      else if (tokens.length && tokens.every((w) => hay.includes(w))) score = 1000 - hay.length; // all words, most specific wins
+      else continue;
+      if (score > bestScore) {
+        best = n;
+        bestScore = score;
+      }
+    }
+    return best;
+  };
+
+  const fromNode = nodeFor(fromTxt, (n) => `${n.id.replace(/_/g, " ")} ${n.label} ${n.sublabel ?? ""}`);
+  const addSpec = ADD_TARGETS.find((t) => t.re.test(toTxt));
+  if (!fromNode) {
+    log(`swap: no node matched "${fromTxt}" — fallthrough`);
+    return null;
+  }
+  if (!addSpec) {
+    log(`swap: no add-spec matched "${toTxt}" — fallthrough`);
+    return null;
+  }
+  const existing = current.nodes.find((n) => n.id === addSpec.node().id);
+  // If the target already exists, just rewire to it and drop X.
+  const toNode = existing ?? { ...addSpec.node(), region: "" };
+
+  const edges = current.edges
+    .filter((e) => e.source !== fromNode.id && e.target !== fromNode.id)
+    .map((e) => ({ ...e }));
+  current.edges
+    .filter((e) => e.target === fromNode.id)
+    .forEach((e) => edges.push({ ...e, target: toNode.id }));
+  current.edges
+    .filter((e) => e.source === fromNode.id)
+    .forEach((e) => edges.push({ ...e, source: toNode.id }));
+
+  const nodes = existing
+    ? current.nodes.filter((n) => n.id !== fromNode.id)
+    : [...current.nodes.filter((n) => n.id !== fromNode.id), toNode];
+  // de-dup edges that may now loop back onto themselves
+  const seen = new Set<string>();
+  const dedup = edges.filter((e) => {
+    if (e.source === e.target || seen.has(`${e.source}->${e.target}`)) return false;
+    seen.add(`${e.source}->${e.target}`);
+    return true;
+  });
+
+  log(`swap: ${fromNode.id} -> ${toNode.id} (${existing ? "existing" : "added"})`);
+  return {
+    ...current,
+    nodes,
+    edges: dedup,
+    cleaned_transcript: utterance.trim(),
+  };
+}
+
 function removeIntent(u: string, current: ArchState): ArchState | null {
   if (!REMOVE_RE.test(u)) return null;
   const target = REMOVE_TARGETS.find((t) => t.re.test(u));
@@ -415,6 +491,10 @@ export function mockSynthesize(utterance: string, current: ArchState | null): Ar
     log("path=first-active-active");
     return { ...stateGcpActiveActive(), cleaned_transcript: utterance.trim() };
   }
+
+  // Swap intent must win over removal/append logic ("swap Cloud SQL for Spanner")
+  const swapped = swapIntent(u, utterance, current!);
+  if (swapped) return swapped;
 
   // Removal intent must win over append/switch logic
   const removed = removeIntent(u, current!);

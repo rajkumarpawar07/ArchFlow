@@ -1,0 +1,12 @@
+import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
+import { writeFileSync } from 'node:fs';
+const tts = new MsEdgeTTS();
+await tts.setMetadata('en-US-AriaNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+const { audioStream } = tts.toStream('Hello from ArchFlow, the canvas that listens.');
+const chunks = [];
+audioStream.on('data', c => chunks.push(c));
+audioStream.on('close', () => {});
+await new Promise((ok, bad) => { audioStream.on('close', ok); audioStream.on('error', bad); });
+const buf = Buffer.concat(chunks);
+writeFileSync('C:/Users/Rajkumar/AppData/Local/Temp/opencode/tts-test.mp3', buf);
+console.log('bytes:', buf.length);

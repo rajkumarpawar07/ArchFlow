@@ -21,6 +21,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      // suppressHydrationWarning: Turbopack dev can hash next/font CSS-module classes
+      // differently on server vs client (also browser extensions mutate <html>), which
+      // would otherwise raise a harmless hydration mismatch on the font className.
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

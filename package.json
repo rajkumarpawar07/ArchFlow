@@ -6,21 +6,28 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "video:studio": "remotion studio remotion/entry.ts",
+    "video:render": "remotion render remotion/entry.ts ArchFlowPitch out/archflow-hackathon.mp4"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.98",
+    "@ai-sdk/openai-compatible": "^3.0.71",
+    "@remotion/cli": "^4.0.536",
+    "@remotion/google-fonts": "^4.0.536",
     "@types/dagre": "^0.7.54",
     "@xyflow/react": "^12.12.0",
     "ai": "^7.0.142",
     "clsx": "^2.1.1",
     "dagre": "^0.8.5",
+    "msedge-tts": "^2.1.0",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-icons": "^5.7.0",
     "react-markdown": "^10.1.0",
-    "zod": "^4.6.7"
+    "remotion": "^4.0.536",
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

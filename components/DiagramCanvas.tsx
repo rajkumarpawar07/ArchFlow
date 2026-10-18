@@ -370,7 +370,7 @@ export default function DiagramCanvas({
             setSelectedId(null);
           }}
           fitView
-          fitViewOptions={{ padding: 0.25 }}
+          fitViewOptions={{ padding: 0.35, maxZoom: 1.05 }}
           panOnDrag={panMode ? true : [1, 2]}
           selectionOnDrag={!panMode}
           panOnScroll

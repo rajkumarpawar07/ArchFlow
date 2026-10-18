@@ -21,10 +21,21 @@ export function layoutGraph(
   edges: ArchEdge[]
 ): { rfNodes: RFNode[]; rfEdges: RFEdge[] } {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: "LR", nodesep: 50, ranksep: 90 });
+  // Node bbox matches the rendered SketchNode (~230w × ~104h incl. sublabel + region chip),
+  // so dagre doesn't stack taller real nodes on top of each other.
+  const NODE_W = 230;
+  const NODE_H = 104;
+  g.setGraph({
+    rankdir: "LR",
+    nodesep: 90, // breathing room between nodes on the same rank
+    edgesep: 60,
+    ranksep: 170, // clear lane between ranks so edge labels never collide
+    marginx: 24,
+    marginy: 24,
+  });
   g.setDefaultEdgeLabel(() => ({}));
 
-  nodes.forEach((n) => g.setNode(n.id, { width: 200, height: 72 }));
+  nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));
   edges.forEach((e) => {
     if (nodes.find((n) => n.id === e.source) && nodes.find((n) => n.id === e.target)) {
       g.setEdge(e.source, e.target);
@@ -42,7 +53,7 @@ export function layoutGraph(
         nodeType: n.type,
         region: n.region || "",
       },
-      position: { x: (pos?.x ?? 0) - 100, y: (pos?.y ?? 0) - 36 },
+      position: { x: (pos?.x ?? 0) - NODE_W / 2, y: (pos?.y ?? 0) - NODE_H / 2 },
     };
   });
 
