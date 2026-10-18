@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ArchFlow — Voice-First Architecture & PRD Synthesizer",
+  title: "ArchFlow",
   description: "Dictate via Wispr Flow. Get live diagram + PRD + Staff review + Terraform.",
 };
 
